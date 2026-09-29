@@ -164,6 +164,8 @@ export default function AdminProducts() {
   const [query, setQuery] = useState("");
   const fileRef = useRef(null);
   const [selectedImage, setSelectedImage] = useState(null);
+  const [selectedImageName, setSelectedImageName] = useState("");
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   useEffect(() => {
     fetchAdminResource(dispatch, "products", "adminProducts", "products");
@@ -188,6 +190,8 @@ export default function AdminProducts() {
     setEditingId(null);
     setForm(emptyProduct);
     setSelectedImage(null);
+    setSelectedImageName("");
+    setUploadingImage(false);
     setNotice("");
     setOpen(true);
   };
@@ -197,11 +201,15 @@ export default function AdminProducts() {
     setEditingId(null);
     setForm(emptyProduct);
     setSelectedImage(null);
+    setSelectedImageName("");
+    setUploadingImage(false);
   };
 
   const edit = (product) => {
     setEditingId(product.id);
     setSelectedImage(null);
+    setSelectedImageName("");
+    setUploadingImage(false);
     setNotice("");
     const editableProduct = Object.fromEntries(
       Object.entries(product).filter(([field]) => field !== "slug" && field !== "sku")
@@ -221,10 +229,19 @@ export default function AdminProducts() {
     const file = event.target.files?.[0];
     event.target.value = "";
     if (!file) return;
-    if (!/^image\/(jpeg|png|webp)$/.test(file.type)) return setNotice("Please choose a JPG, PNG or WEBP image.");
-    if (file.size > MAX_IMAGE_BYTES) return setNotice("Image must be 5MB or smaller.");
+    if (!/^image\/(jpeg|png|webp)$/.test(file.type)) {
+      setSelectedImage(null);
+      setSelectedImageName("");
+      return setNotice("Please choose a JPG, PNG or WEBP image.");
+    }
+    if (file.size > MAX_IMAGE_BYTES) {
+      setSelectedImage(null);
+      setSelectedImageName("");
+      return setNotice("Image must be 5MB or smaller.");
+    }
     setNotice("");
     setSelectedImage(file);
+    setSelectedImageName(file.name);
     const reader = new FileReader();
     reader.onload = () => setForm((f) => ({ ...f, image_url: String(reader.result) }));
     reader.onerror = () => setNotice("Could not read that image.");
@@ -234,12 +251,14 @@ export default function AdminProducts() {
   const submit = (event) => {
     event.preventDefault();
     setNotice("");
+    setUploadingImage(true);
     const fields = { ...form };
     Object.entries(submitDefaults).forEach(([key, fallback]) => {
       if (!String(fields[key] ?? "").trim()) fields[key] = fallback;
     });
     if (!String(fields.original_price ?? "").trim()) fields.original_price = fields.price;
     if (Number(fields.original_price) < Number(fields.price)) {
+      setUploadingImage(false);
       setNotice("Original price must be the same as or higher than the product price.");
       return;
     }
@@ -284,9 +303,11 @@ export default function AdminProducts() {
           closeModal();
           setNotice("Product saved.");
         })
-        .catch((e) => setNotice(e.message));
+        .catch((e) => setNotice(e.message))
+        .finally(() => setUploadingImage(false));
     } catch (err) {
       setNotice(err.message);
+      setUploadingImage(false);
     }
   };
 
@@ -429,6 +450,33 @@ export default function AdminProducts() {
                 </Box>
               )}
             </Box>
+            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 1, mt: 1, flexWrap: "wrap" }}>
+              <Typography sx={{ fontFamily: FONT, fontSize: 13, color: MUTED }}>
+                {selectedImageName || (form.image_url ? "Current image selected" : "No image selected")}
+              </Typography>
+              <Box sx={{ display: "flex", gap: 1 }}>
+                <Box component="button" type="button" onClick={() => fileRef.current?.click()} sx={{ border: `1px solid ${BORDER}`, borderRadius: "8px", bgcolor: "#fff", px: 1.25, py: 0.75, fontFamily: FONT, fontSize: 12.5, fontWeight: 700, color: BRAND, cursor: "pointer" }}>
+                  {selectedImage ? "Change image" : "Choose image"}
+                </Box>
+                {form.image_url && (
+                  <Box
+                    component="button"
+                    type="button"
+                    onClick={() => {
+                      setSelectedImage(null);
+                      setSelectedImageName("");
+                      setForm((current) => ({ ...current, image_url: "" }));
+                    }}
+                    sx={{ border: `1px solid ${BORDER}`, borderRadius: "8px", bgcolor: "#fff", px: 1.25, py: 0.75, fontFamily: FONT, fontSize: 12.5, fontWeight: 700, color: "#ef4444", cursor: "pointer" }}
+                  >
+                    Remove image
+                  </Box>
+                )}
+              </Box>
+            </Box>
+            {uploadingImage && (
+              <Alert severity="info" sx={{ mt: 1.5 }}>Uploading image...</Alert>
+            )}
             <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" hidden onChange={onPickImage} />
           </Field>
 

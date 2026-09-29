@@ -1,5 +1,6 @@
 const asyncHandler = require('../utils/asyncHandler');
 const ProductService = require('../services/productService');
+const { uploadProductImage } = require('../services/uploadService');
 const { sendSuccess } = require('../utils/responseHandler');
 
 const getAllProducts = asyncHandler(async (req, res) => {
@@ -46,20 +47,34 @@ const searchProducts = asyncHandler(async (req, res) => {
   return sendSuccess(res, 200, 'Product search completed successfully.', result);
 });
 
+const resolveProductImageUrl = async (req, fallbackUrl = '') => {
+  if (req.file) {
+    return await uploadProductImage(req.file);
+  }
+
+  if (typeof req.body.image_url === 'string') {
+    const trimmed = req.body.image_url.trim();
+    return trimmed || fallbackUrl;
+  }
+
+  return fallbackUrl;
+};
+
 const createProduct = asyncHandler(async (req, res) => {
   const service = ProductService();
   const product = await service.createProduct({
     ...req.body,
-    image_url: req.file ? `/uploads/${req.file.filename}` : req.body.image_url || ''
+    image_url: await resolveProductImageUrl(req, '')
   });
 
   return sendSuccess(res, 201, 'Product created successfully.', { product });
 });
 
 const updateProduct = asyncHandler(async (req, res) => {
+  const existingProduct = await ProductService().getProductById({ id: req.params.id });
   const updatePayload = {
     ...req.body,
-    image_url: req.file ? `/uploads/${req.file.filename}` : req.body.image_url
+    image_url: await resolveProductImageUrl(req, existingProduct.image_url || '')
   };
 
   const service = ProductService();

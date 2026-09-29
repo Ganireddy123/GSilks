@@ -43,6 +43,16 @@ const errorMiddleware = (err, req, res, next) => {
     errors = Array.isArray(err.errors) ? err.errors.map((item) => item.message || item) : [err.message];
   }
 
+  if (err && err.name === 'MulterError') {
+    statusCode = 400;
+    message = err.code === 'LIMIT_FILE_SIZE' ? 'Image is too large.' : 'Image upload failed.';
+    errors = [
+      err.code === 'LIMIT_FILE_SIZE'
+        ? 'The selected image must be 5MB or smaller.'
+        : err.message || 'The uploaded file could not be processed.'
+    ];
+  }
+
   if (err && err.name === 'JsonWebTokenError') {
     statusCode = 401;
     message = 'Authentication token is invalid.';

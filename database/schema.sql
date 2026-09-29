@@ -1,8 +1,4 @@
-CREATE DATABASE IF NOT EXISTS `gsilks_db`
-CHARACTER SET utf8mb4
-COLLATE utf8mb4_unicode_ci;
-
-USE `gsilks_db`;
+USE `defaultdb`;
 
 -- -----------------------------------------------------------------------------
 -- Users table: customer and administrator accounts.

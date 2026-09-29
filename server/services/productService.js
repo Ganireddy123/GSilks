@@ -227,7 +227,7 @@ const updateProduct = async (DATA) => {
     price: payload.price ?? existing.price,
     original_price: payload.original_price ?? existing.original_price,
     stock: payload.stock ?? existing.stock,
-    image_url: payload.image_url ?? existing.image_url,
+    image_url: payload.image_url && String(payload.image_url).trim() ? payload.image_url : existing.image_url,
     material: payload.material ?? existing.material,
     color: payload.color ?? existing.color,
     saree_length: payload.saree_length ?? existing.saree_length,
