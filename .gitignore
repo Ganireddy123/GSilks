@@ -1,0 +1,41 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Local environment files
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
+
+# Build output and coverage
+dist/
+**/dist/
+dist-ssr/
+coverage/
+**/coverage/
+
+# Runtime uploads; keep the placeholder file
+server/uploads/*
+!server/uploads/.gitkeep
+
+# Logs and debug output
+logs/
+**/logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Local editor and operating system files
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+*.sw?
+*.tsbuildinfo
