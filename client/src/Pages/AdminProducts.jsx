@@ -165,6 +165,7 @@ export default function AdminProducts() {
   const fileRef = useRef(null);
   const [selectedImage, setSelectedImage] = useState(null);
   const [selectedImageName, setSelectedImageName] = useState("");
+  const [previewImageUrl, setPreviewImageUrl] = useState("");
   const [uploadingImage, setUploadingImage] = useState(false);
 
   useEffect(() => {
@@ -197,11 +198,13 @@ export default function AdminProducts() {
   };
 
   const closeModal = () => {
+    if (previewImageUrl) URL.revokeObjectURL(previewImageUrl);
     setOpen(false);
     setEditingId(null);
     setForm(emptyProduct);
     setSelectedImage(null);
     setSelectedImageName("");
+    setPreviewImageUrl("");
     setUploadingImage(false);
   };
 
@@ -232,20 +235,24 @@ export default function AdminProducts() {
     if (!/^image\/(jpeg|png|webp)$/.test(file.type)) {
       setSelectedImage(null);
       setSelectedImageName("");
+      if (previewImageUrl) URL.revokeObjectURL(previewImageUrl);
+      setPreviewImageUrl("");
       return setNotice("Please choose a JPG, PNG or WEBP image.");
     }
     if (file.size > MAX_IMAGE_BYTES) {
       setSelectedImage(null);
       setSelectedImageName("");
+      if (previewImageUrl) URL.revokeObjectURL(previewImageUrl);
+      setPreviewImageUrl("");
       return setNotice("Image must be 5MB or smaller.");
     }
     setNotice("");
     setSelectedImage(file);
     setSelectedImageName(file.name);
-    const reader = new FileReader();
-    reader.onload = () => setForm((f) => ({ ...f, image_url: String(reader.result) }));
-    reader.onerror = () => setNotice("Could not read that image.");
-    reader.readAsDataURL(file);
+    if (previewImageUrl) URL.revokeObjectURL(previewImageUrl);
+    const nextPreview = URL.createObjectURL(file);
+    setPreviewImageUrl(nextPreview);
+    setForm((f) => ({ ...f, image_url: nextPreview }));
   };
 
   const submit = (event) => {
@@ -260,6 +267,12 @@ export default function AdminProducts() {
     if (Number(fields.original_price) < Number(fields.price)) {
       setUploadingImage(false);
       setNotice("Original price must be the same as or higher than the product price.");
+      return;
+    }
+
+    if (selectedImage && !(selectedImage instanceof File)) {
+      setUploadingImage(false);
+      setNotice("A valid product image file is required.");
       return;
     }
 
@@ -279,12 +292,18 @@ export default function AdminProducts() {
     try {
       let payload = productData;
       if (selectedImage) {
+        if (!(selectedImage instanceof File)) {
+          throw new Error("A valid image file is required.");
+        }
         payload = new FormData();
         Object.entries(productData).forEach(([key, value]) => {
           if (key !== "image_url") payload.append(key, String(value ?? ""));
         });
         payload.append("image", selectedImage);
         if (editingId) payload.append("id", String(editingId));
+        if (!payload.has("image")) {
+          throw new Error("The image file was not attached to the upload request.");
+        }
       }
       const request = editingId
         ? AppAPI.updateProduct.put(undefined, payload instanceof FormData ? payload : { id: editingId, ...payload })
@@ -437,7 +456,7 @@ export default function AdminProducts() {
               }}
             >
               {form.image_url ? (
-                <Box component="img" src={resolveAssetUrl(form.image_url)} alt="Product preview" sx={{ maxHeight: 220, maxWidth: "100%", objectFit: "contain", display: "block" }} />
+                <Box component="img" src={form.image_url.startsWith("blob:") ? form.image_url : resolveAssetUrl(form.image_url)} alt="Product preview" sx={{ maxHeight: 220, maxWidth: "100%", objectFit: "contain", display: "block" }} />
               ) : (
                 <Box sx={{ py: 3 }}>
                   <Box sx={{ fontSize: 32, lineHeight: 1 }}>📷</Box>
