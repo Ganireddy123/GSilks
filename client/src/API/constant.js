@@ -1,4 +1,4 @@
-const hostname = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
+const hostname = import.meta.env.VITE_API_BASE_URL || "https://gsilks-backend.onrender.com";
 
 export const publicEndPoints = new Map([
   ["register", { path: "/auth/register", methods: ["post"] }],
