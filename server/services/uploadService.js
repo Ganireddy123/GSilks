@@ -1,12 +1,15 @@
 const cloudinary = require('cloudinary').v2;
 const ApiError = require('../utils/ApiError');
+const getSafeErrorMessage = require('../utils/safeErrorMessage');
 
 const requiredEnvVars = ['CLOUDINARY_CLOUD_NAME', 'CLOUDINARY_API_KEY', 'CLOUDINARY_API_SECRET'];
 
 const ensureCloudinaryConfig = () => {
   const missing = requiredEnvVars.filter((key) => !process.env[key] || !String(process.env[key]).trim());
   if (missing.length) {
-    throw new ApiError(500, 'Image storage is not configured.', [`Missing environment variables: ${missing.join(', ')}`]);
+    const error = new ApiError(500, `Image storage is not configured. Missing: ${missing.join(', ')}.`);
+    error.exposeSafeMessage = true;
+    throw error;
   }
 
   cloudinary.config({
@@ -48,16 +51,22 @@ const uploadProductImage = async (file) => {
     });
 
     if (!result || !result.secure_url) {
-      throw new ApiError(500, 'Image upload failed.', ['The uploaded image could not be stored.']);
-    }
-
-    return result.secure_url;
-  } catch (error) {
-    if (error && error.statusCode) {
+      const error = new ApiError(500, 'Cloudinary did not return a secure image URL.');
+      error.exposeSafeMessage = true;
       throw error;
     }
 
-    throw new ApiError(500, 'Image upload failed.', ['The image could not be uploaded to the configured storage service.']);
+    console.log('CLOUDINARY UPLOAD SUCCESS:', {
+      public_id: result.public_id,
+      secure_url_exists: Boolean(result.secure_url)
+    });
+    return result.secure_url;
+  } catch (error) {
+    const safeMessage = getSafeErrorMessage(error && error.message);
+    console.error('CLOUDINARY UPLOAD ERROR:', safeMessage);
+    const uploadError = new ApiError(500, safeMessage);
+    uploadError.exposeSafeMessage = true;
+    throw uploadError;
   }
 };
 

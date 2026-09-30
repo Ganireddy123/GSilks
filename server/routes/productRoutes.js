@@ -23,7 +23,7 @@ router.post(
   '/insert-product',
   authMiddleware,
   authorizeRoles('ADMIN'),
-  uploadMiddleware.single('image'),
+  uploadMiddleware.singleProductImage,
   validateMiddleware({
     category_id: { required: true, type: 'number' },
     name: { required: true, type: 'string', minLength: 2 },
@@ -36,7 +36,7 @@ router.put(
   '/update-product',
   authMiddleware,
   authorizeRoles('ADMIN'),
-  uploadMiddleware.single('image'),
+  uploadMiddleware.singleProductImage,
   (req, res, next) => {
     req.params.id = String(req.body.id || req.body.product_id || '');
     next();
@@ -61,7 +61,7 @@ router.post(
   '/',
   authMiddleware,
   authorizeRoles('ADMIN'),
-  uploadMiddleware.single('image'),
+  uploadMiddleware.singleProductImage,
   validateMiddleware({
     category_id: { required: true, type: 'number', source: 'body' },
     name: { required: true, type: 'string', minLength: 2 },
@@ -74,7 +74,7 @@ router.put(
   '/:id',
   authMiddleware,
   authorizeRoles('ADMIN'),
-  uploadMiddleware.single('image'),
+  uploadMiddleware.singleProductImage,
   validateMiddleware({
     id: { required: true, type: 'string', source: 'params' },
     category_id: { type: 'number', source: 'body' },

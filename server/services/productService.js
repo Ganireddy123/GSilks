@@ -1,6 +1,7 @@
 const db = require('../db/db.js');
 const pool = db.pool;
 const ApiError = require('../utils/ApiError');
+const getSafeErrorMessage = require('../utils/safeErrorMessage');
 
 const slugifyProductName = (name) => String(name)
   .normalize('NFKD')
@@ -204,13 +205,17 @@ const createProduct = async (DATA) => {
 
     return await getProductById({ id: result.insertId });
   } catch (error) {
+    const safeMessage = getSafeErrorMessage(error.message);
+    console.error('DATABASE IMAGE INSERT ERROR:', safeMessage);
     if (error.code === 'ER_DUP_ENTRY') {
       throw new ApiError(409, 'A product with this slug or SKU already exists.', ['Duplicate product identifier.']);
     }
     if (error.code === 'ER_NO_REFERENCED_ROW_2') {
       throw new ApiError(400, 'Category not found.', ['The selected category does not exist.']);
     }
-    throw error;
+    const databaseError = new ApiError(500, safeMessage);
+    databaseError.exposeSafeMessage = true;
+    throw databaseError;
   }
 };
 
@@ -265,13 +270,17 @@ const updateProduct = async (DATA) => {
 
     return await getProductById({ id });
   } catch (error) {
+    const safeMessage = getSafeErrorMessage(error.message);
+    console.error('DATABASE IMAGE UPDATE ERROR:', safeMessage);
     if (error.code === 'ER_DUP_ENTRY') {
       throw new ApiError(409, 'A product with this slug or SKU already exists.', ['Duplicate product identifier.']);
     }
     if (error.code === 'ER_NO_REFERENCED_ROW_2') {
       throw new ApiError(400, 'Category not found.', ['The selected category does not exist.']);
     }
-    throw error;
+    const databaseError = new ApiError(500, safeMessage);
+    databaseError.exposeSafeMessage = true;
+    throw databaseError;
   }
 };
 

@@ -1,11 +1,12 @@
 const { sendError } = require('../utils/responseHandler');
+const getSafeErrorMessage = require('../utils/safeErrorMessage');
 
 const errorMiddleware = (err, req, res, next) => {
   if (res.headersSent) {
     return next(err);
   }
 
-  console.error('API request failed:', err);
+  console.error('API request failed:', getSafeErrorMessage(err && err.message));
 
   let statusCode = 500;
   let message = 'Something went wrong on the server.';
@@ -45,11 +46,13 @@ const errorMiddleware = (err, req, res, next) => {
 
   if (err && err.name === 'MulterError') {
     statusCode = 400;
-    message = err.code === 'LIMIT_FILE_SIZE' ? 'Image is too large.' : 'Image upload failed.';
+    message = err.code === 'LIMIT_FILE_SIZE'
+      ? 'Image is too large.'
+      : getSafeErrorMessage(err.message || 'The uploaded file could not be processed.');
     errors = [
       err.code === 'LIMIT_FILE_SIZE'
         ? 'The selected image must be 5MB or smaller.'
-        : err.message || 'The uploaded file could not be processed.'
+        : getSafeErrorMessage(err.message || 'The uploaded file could not be processed.')
     ];
   }
 
@@ -72,7 +75,9 @@ const errorMiddleware = (err, req, res, next) => {
   }
 
   if (statusCode >= 500) {
-    message = 'Something went wrong on the server.';
+    message = err && err.exposeSafeMessage
+      ? getSafeErrorMessage(err.message)
+      : 'Something went wrong on the server.';
     errors = ['Unexpected server error.'];
   }
 

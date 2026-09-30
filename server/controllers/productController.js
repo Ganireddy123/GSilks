@@ -67,6 +67,9 @@ const createProduct = asyncHandler(async (req, res) => {
     image_url: await resolveProductImageUrl(req, '')
   });
 
+  if (req.file) {
+    console.log('PRODUCT IMAGE URL PERSISTED:', { operation: 'create', saved: Boolean(product.image_url) });
+  }
   return sendSuccess(res, 201, 'Product created successfully.', { product });
 });
 
@@ -79,6 +82,9 @@ const updateProduct = asyncHandler(async (req, res) => {
 
   const service = ProductService();
   const product = await service.updateProduct({ ...updatePayload, id: req.params.id });
+  if (req.file) {
+    console.log('PRODUCT IMAGE URL PERSISTED:', { operation: 'update', saved: Boolean(product.image_url) });
+  }
   return sendSuccess(res, 200, 'Product updated successfully.', { product });
 });
 
